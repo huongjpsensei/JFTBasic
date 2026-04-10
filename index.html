@@ -604,16 +604,98 @@
         grid-template-columns: 1fr;
       }
     }
+
+    .gate-screen[hidden] {
+      display: none !important;
+    }
+
+    .gate-msg {
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #f9fafb;
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .gate-msg.error {
+      border-color: rgba(255, 91, 110, 0.45);
+      background: rgba(255, 91, 110, 0.08);
+      color: var(--text);
+    }
+
+    .gate-msg.ok {
+      border-color: rgba(46, 204, 113, 0.45);
+      background: rgba(46, 204, 113, 0.08);
+    }
+
+    .gate-logout {
+      justify-self: start;
+      margin-top: 4px;
+      padding: 6px 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      border: none;
+      background: transparent;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    .gate-logout:hover {
+      color: var(--text);
+    }
+
+    input[type="email"] {
+      width: 100%;
+      padding: 12px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      color: var(--text);
+      outline: none;
+    }
+
+    input[type="email"]:focus {
+      border-color: rgba(110, 168, 254, 0.55);
+      box-shadow: 0 0 0 3px rgba(110, 168, 254, 0.18);
+    }
+
+    #mainApp[hidden] {
+      display: none !important;
+    }
   </style>
 </head>
 
 <body>
+  <div id="accessGate" class="wrap gate-screen">
+    <div class="card">
+      <header style="margin-bottom: 12px;">
+        <div class="title">Truy cập trang luyện đề</div>
+        <div class="subtitle">
+          Nhập email của bạn. Bấm <b>Gửi yêu cầu</b> để xin truy cập; sau khi admin duyệt, bấm <b>Vào trang</b>.
+        </div>
+      </header>
+      <label class="small" for="gateEmail">Email</label>
+      <input id="gateEmail" type="email" inputmode="email" autocomplete="email" placeholder="ten@gmail.com" />
+      <div id="gateMsg" class="gate-msg" style="margin-top: 12px; display: none;" aria-live="polite"></div>
+      <div class="btns" style="margin-top: 14px;">
+        <button type="button" id="gateRequestBtn" class="primary">Gửi yêu cầu</button>
+        <button type="button" id="gateEnterBtn">Vào trang</button>
+      </div>
+      
+    </div>
+  </div>
+
+  <div id="mainApp" hidden>
   <div class="wrap">
     <header>
       <div class="title">Form trắc nghiệm JFT Basic [Hương Sensei]</div>
       <div class="subtitle">
         Chọn 1 bài, nhập tên, làm bài và bấm <b>Nộp bài</b> để chấm điểm. Mỗi câu 1 điểm và bắt buộc chọn đủ tất cả câu.
       </div>
+      <button type="button" id="gateLogoutBtn" class="gate-logout">Đổi email truy cập</button>
     </header>
 
     <div class="card">
@@ -661,6 +743,7 @@
         </div>
       </div>
     </div>
+  </div>
   </div>
 
   <dialog id="scoreDialog">
@@ -1594,8 +1677,17 @@
     </div>
   </template>
 
+  <script>
+    /** Cấu hình cổng email — sửa trực tiếp trong file này (không cần file riêng). */
+    window.GATE_CONFIG = {
+      webAppUrl: "https://script.google.com/macros/s/AKfycbwyUXkvsvL9XnJGqJcUxsn4daSQhbfjqk9nTkTk8yYMO3Xc4sMjl4bHZNFdKKbe2QE/exec",
+      disableGate: false,
+    };
+  </script>
   <script src="./quizzes.generated.js"></script>
   <script>
+
+    const GATE_LS_KEY = "jft_gate_email";
 
     const fullNameEl = document.getElementById("fullName");
     const nameHintEl = document.getElementById("nameHint");
@@ -1618,6 +1710,13 @@
     const homeQuizHintEl = document.getElementById("homeQuizHint");
     const quizPartBarEl = document.getElementById("quizPartBar");
     const sectionHintEl = document.getElementById("sectionHint");
+    const accessGateEl = document.getElementById("accessGate");
+    const mainAppEl = document.getElementById("mainApp");
+    const gateEmailEl = document.getElementById("gateEmail");
+    const gateMsgEl = document.getElementById("gateMsg");
+    const gateRequestBtn = document.getElementById("gateRequestBtn");
+    const gateEnterBtn = document.getElementById("gateEnterBtn");
+    const gateLogoutBtn = document.getElementById("gateLogoutBtn");
 
     const generated = Array.isArray(window.GENERATED_QUIZZES) ? window.GENERATED_QUIZZES : [];
 
@@ -2141,37 +2240,203 @@
     fullNameEl.addEventListener("input", () => dataHintEl.classList.remove("show"));
     fullNameEl.addEventListener("input", () => sectionHintEl.classList.remove("show"));
 
-    syncModeButtons();
-    updateHomeHints();
-
-    const route = parseHashRoute();
-    if (route.type === "merged" && SECTION_TYPES.some((s) => s.id === route.partId)) {
-      practiceMode = "section";
-      currentSectionId = route.partId;
-      if (sectionPickerEl) sectionPickerEl.hidden = false;
-      renderSectionPicker();
-      syncModeButtons();
-      updateHomeHints();
-      openMergedSectionPractice();
-    } else if (route.type === "quiz" && route.partId && SECTION_TYPES.some((s) => s.id === route.partId)) {
-      practiceMode = "section";
-      currentSectionId = route.partId;
-      if (sectionPickerEl) sectionPickerEl.hidden = false;
-      renderSectionPicker();
-      syncModeButtons();
-      updateHomeHints();
-      openMergedSectionPractice();
-    } else if (route.type === "quiz" && route.quizId && ALL_QUIZZES.some((q) => q.id === route.quizId)) {
-      practiceMode = "full";
-      currentSectionId = null;
-      if (sectionPickerEl) sectionPickerEl.hidden = true;
-      syncModeButtons();
-      updateHomeHints();
-      showQuiz(route.quizId);
-    } else {
-      showHome();
+    function getGateConfig() {
+      return window.GATE_CONFIG || {};
     }
-    fullNameEl.focus();
+
+    async function gateApi(payload) {
+      const url = String(getGateConfig().webAppUrl || "").trim();
+      if (!url) throw new Error("missing_web_app_url");
+      const res = await fetch(url, {
+        method: "POST",
+        redirect: "follow",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload),
+      });
+      const text = await res.text();
+      try {
+        return JSON.parse(text);
+      } catch {
+        throw new Error("bad_response");
+      }
+    }
+
+    function showGateUi(text, kind) {
+      if (!gateMsgEl) return;
+      gateMsgEl.style.display = "block";
+      gateMsgEl.textContent = text;
+      gateMsgEl.classList.remove("error", "ok");
+      if (kind === "error") gateMsgEl.classList.add("error");
+      else if (kind === "ok") gateMsgEl.classList.add("ok");
+    }
+
+    function hideGateUi() {
+      if (!gateMsgEl) return;
+      gateMsgEl.style.display = "none";
+      gateMsgEl.textContent = "";
+      gateMsgEl.classList.remove("error", "ok");
+    }
+
+    function readGateEmail() {
+      return (gateEmailEl && gateEmailEl.value ? gateEmailEl.value : "").trim().toLowerCase();
+    }
+
+    function enterMainApp(email) {
+      const e = String(email || "").trim().toLowerCase();
+      if (e) localStorage.setItem(GATE_LS_KEY, e);
+      if (accessGateEl) accessGateEl.hidden = true;
+      if (mainAppEl) mainAppEl.hidden = false;
+      bootQuizRoute();
+    }
+
+    function leaveMainApp() {
+      localStorage.removeItem(GATE_LS_KEY);
+      if (mainAppEl) mainAppEl.hidden = true;
+      if (accessGateEl) accessGateEl.hidden = false;
+      window.location.hash = "";
+      hideGateUi();
+      if (gateEmailEl) gateEmailEl.focus();
+    }
+
+    function bootQuizRoute() {
+      syncModeButtons();
+      updateHomeHints();
+
+      const route = parseHashRoute();
+      if (route.type === "merged" && SECTION_TYPES.some((s) => s.id === route.partId)) {
+        practiceMode = "section";
+        currentSectionId = route.partId;
+        if (sectionPickerEl) sectionPickerEl.hidden = false;
+        renderSectionPicker();
+        syncModeButtons();
+        updateHomeHints();
+        openMergedSectionPractice();
+      } else if (route.type === "quiz" && route.partId && SECTION_TYPES.some((s) => s.id === route.partId)) {
+        practiceMode = "section";
+        currentSectionId = route.partId;
+        if (sectionPickerEl) sectionPickerEl.hidden = false;
+        renderSectionPicker();
+        syncModeButtons();
+        updateHomeHints();
+        openMergedSectionPractice();
+      } else if (route.type === "quiz" && route.quizId && ALL_QUIZZES.some((q) => q.id === route.quizId)) {
+        practiceMode = "full";
+        currentSectionId = null;
+        if (sectionPickerEl) sectionPickerEl.hidden = true;
+        syncModeButtons();
+        updateHomeHints();
+        showQuiz(route.quizId);
+      } else {
+        showHome();
+      }
+      fullNameEl.focus();
+    }
+
+    async function tryAutoEnterFromStorage() {
+      const cfg = getGateConfig();
+      const url = String(cfg.webAppUrl || "").trim();
+      const saved = (localStorage.getItem(GATE_LS_KEY) || "").trim().toLowerCase();
+      if (!saved || !url) return false;
+      if (gateEmailEl) gateEmailEl.value = saved;
+      const data = await gateApi({ action: "check", email: saved });
+      return !!(data && data.ok && data.approved);
+    }
+
+    gateLogoutBtn?.addEventListener("click", () => leaveMainApp());
+
+    gateRequestBtn?.addEventListener("click", async () => {
+      hideGateUi();
+      const email = readGateEmail();
+      if (!email) {
+        showGateUi("Vui lòng nhập email.", "error");
+        gateEmailEl?.focus();
+        return;
+      }
+      gateRequestBtn.disabled = true;
+      gateEnterBtn.disabled = true;
+      try {
+        const data = await gateApi({ action: "request", email });
+        if (data && data.ok) {
+          if (data.state === "already_approved") {
+            showGateUi("Email này đã được duyệt. Bấm «Vào trang».", "ok");
+          } else if (data.state === "already_pending") {
+            showGateUi("Email đã gửi trước đó, đang chờ duyệt.", "ok");
+          } else {
+            showGateUi("Đã gửi yêu cầu. Chờ admin duyệt rồi bấm «Vào trang».", "ok");
+          }
+        } else {
+          showGateUi("Không gửi được: " + (data && data.error ? data.error : "lỗi"), "error");
+        }
+      } catch {
+        showGateUi("Lỗi mạng hoặc cấu hình (xem GATE_CONFIG.webAppUrl và Deploy Web App).", "error");
+      } finally {
+        gateRequestBtn.disabled = false;
+        gateEnterBtn.disabled = false;
+      }
+    });
+
+    gateEnterBtn?.addEventListener("click", async () => {
+      hideGateUi();
+      const email = readGateEmail();
+      if (!email) {
+        showGateUi("Vui lòng nhập email.", "error");
+        gateEmailEl?.focus();
+        return;
+      }
+      gateRequestBtn.disabled = true;
+      gateEnterBtn.disabled = true;
+      try {
+        const data = await gateApi({ action: "check", email });
+        if (data && data.ok && data.approved) {
+          enterMainApp(email);
+        } else if (data && data.ok && !data.approved) {
+          showGateUi("Email chưa được duyệt hoặc chưa gửi yêu cầu.", "error");
+        } else {
+          showGateUi("Kiểm tra thất bại: " + (data && data.error ? data.error : "lỗi"), "error");
+        }
+      } catch {
+        showGateUi("Lỗi mạng hoặc cấu hình (xem GATE_CONFIG.webAppUrl).", "error");
+      } finally {
+        gateRequestBtn.disabled = false;
+        gateEnterBtn.disabled = false;
+      }
+    });
+
+    (async function initAccessGate() {
+      const cfg = getGateConfig();
+      if (cfg.disableGate === true) {
+        if (accessGateEl) accessGateEl.hidden = true;
+        if (mainAppEl) mainAppEl.hidden = false;
+        bootQuizRoute();
+        return;
+      }
+      const url = String(cfg.webAppUrl || "").trim();
+      if (!url) {
+        showGateUi("Chưa cấu hình GATE_CONFIG.webAppUrl ở đầu file index.html.", "error");
+        if (gateMsgEl) gateMsgEl.style.display = "block";
+        return;
+      }
+
+      if (gateEmailEl) {
+        const saved = (localStorage.getItem(GATE_LS_KEY) || "").trim();
+        if (saved) gateEmailEl.value = saved;
+      }
+
+      showGateUi("Đang kiểm tra phiên đã lưu…", "ok");
+      if (gateMsgEl) gateMsgEl.style.display = "block";
+      try {
+        const ok = await tryAutoEnterFromStorage();
+        hideGateUi();
+        if (ok) {
+          const saved = (localStorage.getItem(GATE_LS_KEY) || "").trim().toLowerCase();
+          enterMainApp(saved);
+          return;
+        }
+      } catch {
+        hideGateUi();
+        showGateUi("Không kiểm tra được tự động. Nhập email và bấm «Vào trang».", "error");
+      }
+    })();
   </script>
 </body>
 

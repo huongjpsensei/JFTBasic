@@ -1,0 +1,292 @@
+﻿<!doctype html>
+<html lang="vi">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin — Quản lý truy cập email</title>
+  <style>
+    :root { --bg:#fff; --card:#fff; --text:#111827; --muted:#6b7280; --border:rgba(17,24,39,.14); --font-sans:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif; }
+    * { box-sizing: border-box; }
+    html { font-family: var(--font-sans); font-size:16px; line-height:1.5; }
+    body { margin:0; color:var(--text); background:var(--bg); }
+    button,input { font-family:inherit; font-size:inherit; }
+    .wrap { max-width:760px; margin:28px auto 48px; padding:0 16px; }
+    .title { font-size:22px; font-weight:700; }
+    .subtitle { color:var(--muted); font-size:14px; margin:8px 0 0; }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px; margin-top:16px; box-shadow:0 14px 40px rgba(17,24,39,.08); }
+    label.small { display:block; color:var(--muted); font-size:13px; margin-bottom:6px; }
+    input[type="password"],
+    input[type="text"] { width:100%; padding:12px; border-radius:10px; border:1px solid var(--border); }
+    .search-row { margin-top:14px; }
+    input:focus { outline:none; border-color:rgba(110,168,254,.55); box-shadow:0 0 0 3px rgba(110,168,254,.18); }
+    .btns { display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
+    button { appearance:none; border:1px solid var(--border); background:#fff; padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:600; }
+    button.primary { border-color:rgba(37,99,235,.35); background:rgba(37,99,235,.08); }
+    button.warn { border-color:rgba(217,119,6,.45); color:#92400e; }
+    button.danger { border-color:rgba(255,91,110,.45); color:#b91c1c; }
+    button:disabled { opacity:.55; cursor:not-allowed; }
+    .msg { margin-top:12px; padding:10px 12px; border-radius:10px; border:1px solid var(--border); font-size:14px; display:none; }
+    .msg.show { display:block; }
+    .msg.error { border-color:rgba(255,91,110,.45); background:rgba(255,91,110,.08); }
+    .msg.ok { border-color:rgba(46,204,113,.45); background:rgba(46,204,113,.08); }
+    ul.list { list-style:none; margin:0; padding:0; display:grid; gap:10px; }
+    li.row { display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:12px; border:1px solid var(--border); border-radius:12px; background:#f9fafb; }
+    .email { flex:1 1 220px; font-weight:600; word-break:break-all; }
+    .badge { font-size:12px; padding:2px 8px; border-radius:999px; border:1px solid var(--border); }
+    .badge.pending { border-color:rgba(217,119,6,.35); background:rgba(217,119,6,.08); color:#92400e; }
+    .badge.approved { border-color:rgba(46,204,113,.35); background:rgba(46,204,113,.08); color:#166534; }
+    .badge.revoked { border-color:rgba(255,91,110,.35); background:rgba(255,91,110,.08); color:#991b1b; }
+    .meta { font-size:12px; color:var(--muted); width:100%; }
+    .empty { color:var(--muted); font-size:14px; margin:12px 0 0; }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="title">Quản lý email truy cập</div>
+    <p class="subtitle">Tải toàn bộ danh sách và thao tác duyệt/thu hồi trực tiếp.</p>
+
+    <div class="card">
+      <label class="small" for="adminSecret">Mật khẩu admin</label>
+      <input id="adminSecret" type="password" autocomplete="current-password" required />
+
+      <div class="btns">
+        <button type="button" id="loadBtn" class="primary">Tải lại danh sách</button>
+        <button type="button" id="approveAllBtn" class="warn">Duyệt tất cả đang chờ</button>
+        <a href="./index.html" style="align-self:center;font-size:14px;color:var(--muted);">Về trang luyện đề</a>
+      </div>
+
+      <div id="msg" class="msg" role="status" aria-live="polite"></div>
+
+      <div class="search-row">
+        <label class="small" for="emailSearch">Lọc theo email</label>
+        <input id="emailSearch" type="text" inputmode="search" autocomplete="off" placeholder="Gõ một phần địa chỉ email…" />
+      </div>
+
+      <div id="listMount" style="margin-top: 16px;"></div>
+    </div>
+  </div>
+
+  <script>
+    /** Chỉ đặt URL Web App; mật khẩu admin không được nhúng ở đây. */
+    window.GATE_CONFIG = {
+      webAppUrl: "https://script.google.com/macros/s/AKfycbwyUXkvsvL9XnJGqJcUxsn4daSQhbfjqk9nTkTk8yYMO3Xc4sMjl4bHZNFdKKbe2QE/exec",
+    };
+  </script>
+  <script>
+    const loadBtn = document.getElementById("loadBtn");
+    const approveAllBtn = document.getElementById("approveAllBtn");
+    const adminSecretEl = document.getElementById("adminSecret");
+    const emailSearchEl = document.getElementById("emailSearch");
+    const msgEl = document.getElementById("msg");
+    const listMount = document.getElementById("listMount");
+
+    /** null = chưa tải; [] = đã tải nhưng không có dòng */
+    let lastLoadedItems = null;
+
+    function cfg() { return window.GATE_CONFIG || {}; }
+
+    function showMsg(text, kind) {
+      msgEl.textContent = text;
+      msgEl.className = "msg show" + (kind === "error" ? " error" : kind === "ok" ? " ok" : "");
+    }
+
+    function hideMsg() { msgEl.className = "msg"; msgEl.textContent = ""; }
+
+    async function gateApi(payload) {
+      const url = String(cfg().webAppUrl || "").trim();
+      if (!url) throw new Error("missing_web_app_url");
+      const res = await fetch(url, {
+        method: "POST",
+        redirect: "follow",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload),
+      });
+      const text = await res.text();
+      return JSON.parse(text);
+    }
+
+    function effectiveSecret() {
+      return (adminSecretEl.value || "").trim();
+    }
+
+    function statusLabel(status) {
+      const s = String(status || "").toLowerCase();
+      if (s === "approved") return "Đã duyệt";
+      if (s === "pending") return "Chờ duyệt";
+      if (s === "revoked") return "Đã thu hồi";
+      return s || "Không rõ";
+    }
+
+    function statusClass(status) {
+      const s = String(status || "").toLowerCase();
+      return (s === "approved" || s === "pending" || s === "revoked") ? s : "pending";
+    }
+
+    function filterQuery() {
+      return (emailSearchEl.value || "").trim().toLowerCase();
+    }
+
+    function renderWithFilter() {
+      if (lastLoadedItems === null) {
+        listMount.innerHTML = "";
+        return;
+      }
+      const q = filterQuery();
+      let items = lastLoadedItems;
+      if (q) {
+        items = lastLoadedItems.filter((it) =>
+          String(it.email || "").toLowerCase().includes(q)
+        );
+      }
+      if (!lastLoadedItems.length) {
+        listMount.innerHTML = '<p class="empty">Danh sách đang trống.</p>';
+        return;
+      }
+      if (!items.length) {
+        listMount.replaceChildren();
+        const p = document.createElement("p");
+        p.className = "empty";
+        p.textContent = "Không có email khớp bộ lọc.";
+        listMount.appendChild(p);
+        return;
+      }
+      renderListCore(items);
+    }
+
+    async function loadAll() {
+      hideMsg();
+      const secret = effectiveSecret();
+      if (!String(cfg().webAppUrl || "").trim()) return showMsg("Thiếu webAppUrl trong GATE_CONFIG.", "error");
+      if (!secret) return showMsg("Thiếu mật khẩu admin.", "error");
+
+      loadBtn.disabled = true;
+      if (approveAllBtn) approveAllBtn.disabled = true;
+      try {
+        const data = await gateApi({ action: "list_all", secret });
+        if (!data || !data.ok) {
+          lastLoadedItems = null;
+          showMsg("Lỗi: " + (data && data.error ? data.error : "unauthorized hoặc mạng"), "error");
+          listMount.innerHTML = "";
+          return;
+        }
+        const rows = Array.isArray(data.items) ? data.items : [];
+        lastLoadedItems = rows;
+        renderWithFilter();
+        showMsg("Đã tải " + rows.length + " email.", "ok");
+      } catch {
+        lastLoadedItems = null;
+        showMsg("Lỗi mạng hoặc phản hồi không hợp lệ.", "error");
+        listMount.innerHTML = "";
+      } finally {
+        loadBtn.disabled = false;
+        if (approveAllBtn) approveAllBtn.disabled = false;
+      }
+    }
+
+    async function approveAllPending() {
+      const secret = effectiveSecret();
+      if (!String(cfg().webAppUrl || "").trim()) return showMsg("Thiếu webAppUrl trong GATE_CONFIG.", "error");
+      if (!secret) return showMsg("Thiếu mật khẩu admin.", "error");
+      if (!confirm("Duyệt hết mọi email đang ở trạng thái «Chờ duyệt»?")) return;
+
+      loadBtn.disabled = true;
+      if (approveAllBtn) approveAllBtn.disabled = true;
+      try {
+        const data = await gateApi({ action: "approve_all", secret });
+        if (!data || !data.ok) {
+          showMsg("Thất bại: " + (data && data.error ? data.error : ""), "error");
+          return;
+        }
+        const n = typeof data.approved === "number" ? data.approved : 0;
+        showMsg("Đã duyệt " + n + " email đang chờ.", "ok");
+        await loadAll();
+      } catch {
+        showMsg("Lỗi mạng.", "error");
+      } finally {
+        loadBtn.disabled = false;
+        if (approveAllBtn) approveAllBtn.disabled = false;
+      }
+    }
+
+    function renderListCore(items) {
+      const ul = document.createElement("ul");
+      ul.className = "list";
+
+      for (const it of items) {
+        const li = document.createElement("li");
+        li.className = "row";
+        const email = String(it.email || "");
+        const status = String(it.status || "pending").toLowerCase();
+        li.innerHTML = '<span class="email"></span><span class="badge"></span><span class="meta"></span><div class="btns" style="margin:0;"></div>';
+        li.querySelector(".email").textContent = email;
+        const badge = li.querySelector(".badge");
+        badge.textContent = statusLabel(status);
+        badge.classList.add(statusClass(status));
+        li.querySelector(".meta").textContent = it.createdAt ? "Tạo lúc: " + it.createdAt : "";
+
+        const btns = li.querySelector(".btns");
+        if (status !== "approved") {
+          const approveBtn = document.createElement("button");
+          approveBtn.type = "button";
+          approveBtn.className = "primary";
+          approveBtn.textContent = "Duyệt";
+          approveBtn.addEventListener("click", () => act("approve", email));
+          btns.appendChild(approveBtn);
+        }
+        if (status === "approved") {
+          const revokeBtn = document.createElement("button");
+          revokeBtn.type = "button";
+          revokeBtn.className = "warn";
+          revokeBtn.textContent = "Thu hồi";
+          revokeBtn.addEventListener("click", () => act("revoke", email));
+          btns.appendChild(revokeBtn);
+        }
+        if (status === "pending") {
+          const rejectBtn = document.createElement("button");
+          rejectBtn.type = "button";
+          rejectBtn.className = "danger";
+          rejectBtn.textContent = "Xóa yêu cầu";
+          rejectBtn.addEventListener("click", () => act("reject", email));
+          btns.appendChild(rejectBtn);
+        }
+        ul.appendChild(li);
+      }
+
+      listMount.replaceChildren(ul);
+    }
+
+    async function act(action, email) {
+      const secret = effectiveSecret();
+      if (!secret) return showMsg("Thiếu mật khẩu admin.", "error");
+
+      try {
+        const data = await gateApi({ action, secret, email });
+        if (!data || !data.ok) return showMsg("Thất bại: " + (data && data.error ? data.error : ""), "error");
+
+        if (action === "approve") showMsg("Đã duyệt: " + email, "ok");
+        else if (action === "revoke") showMsg("Đã thu hồi quyền: " + email, "ok");
+        else if (action === "reject") showMsg("Đã xóa yêu cầu: " + email, "ok");
+
+        await loadAll();
+      } catch {
+        showMsg("Lỗi mạng.", "error");
+      }
+    }
+
+    loadBtn.addEventListener("click", loadAll);
+    approveAllBtn?.addEventListener("click", approveAllPending);
+    emailSearchEl.addEventListener("input", () => {
+      if (lastLoadedItems !== null) renderWithFilter();
+    });
+
+    if (!String(cfg().webAppUrl || "").trim()) {
+      showMsg("Điền GATE_CONFIG.webAppUrl ở đầu file admin.html rồi reload.", "error");
+    } else {
+      showMsg("Nhập mật khẩu admin, sau đó bấm «Tải lại danh sách».", "ok");
+    }
+  </script>
+</body>
+
+</html>
