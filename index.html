@@ -30,6 +30,11 @@
       --good: #2ecc71;
       --bad: #ff5b6e;
       --warn: #b45309;
+      /* Latin + tiếng Việt + Nhật: một stack ổn định trên Windows / macOS / Android / iOS */
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+        "Noto Sans", "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Hiragino Sans GB",
+        "Yu Gothic UI", "Yu Gothic", YuGothic, Meiryo, "MS PGothic", "Apple SD Gothic Neo", "Malgun Gothic",
+        sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
     }
 
     * {
@@ -37,15 +42,31 @@
     }
 
     html {
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.5;
       -webkit-text-size-adjust: 100%;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
     body {
       margin: 0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji",
-        "Segoe UI Emoji";
+      font-family: inherit;
+      font-size: inherit;
+      line-height: inherit;
       color: var(--text);
       background: var(--bg);
+    }
+
+    button,
+    input,
+    select,
+    textarea,
+    dialog {
+      font-family: inherit;
+      font-size: inherit;
+      line-height: inherit;
     }
 
     .wrap {
@@ -128,7 +149,7 @@
       padding: 10px 12px;
       border-radius: 10px;
       cursor: pointer;
-      font-weight: 650;
+      font-weight: 600;
     }
 
     button.primary {
@@ -183,6 +204,20 @@
     #questionContainer {
       display: grid;
       gap: 18px;
+      font-family: inherit;
+      font-size: 1rem;
+      line-height: inherit;
+    }
+
+    #questionContainer table,
+    #questionContainer td,
+    #questionContainer th,
+    #questionContainer p,
+    #questionContainer span,
+    #questionContainer div,
+    #questionContainer label,
+    #questionContainer li {
+      font-family: inherit;
     }
 
     #questionContainer>.title>p,
@@ -363,6 +398,67 @@
       margin-top: 2px;
     }
 
+    .home-modes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .mode-btn {
+      flex: 1 1 140px;
+      text-align: center;
+    }
+
+    .mode-btn[aria-pressed="true"] {
+      border-color: rgba(37, 99, 235, 0.45);
+      background: rgba(37, 99, 235, 0.12);
+      font-weight: 800;
+    }
+
+    .section-picker {
+      margin-bottom: 14px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-picker[hidden] {
+      display: none !important;
+    }
+
+    .merged-deck-label {
+      margin-top: 18px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px dashed var(--border);
+      background: #f9fafb;
+      color: var(--text);
+    }
+
+    .merged-deck-label:first-child {
+      margin-top: 0;
+    }
+
+    .merged-deck-label p {
+      margin: 0;
+    }
+
+    #quizPartBar {
+      display: none;
+      margin-bottom: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #f9fafb;
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    #quizPartBar.show {
+      display: block;
+    }
+
     .screen {
       display: none;
     }
@@ -484,7 +580,7 @@
       border: 1px solid var(--border);
       background: #ffffff;
       color: var(--text);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-family: inherit;
       font-size: 12px;
       line-height: 1.35;
     }
@@ -522,13 +618,22 @@
 
     <div class="card">
       <div id="screenHome" class="screen show">
-        <div class="subtitle" style="margin:0 0 10px;">
+        <div class="home-modes" role="group" aria-label="Chế độ luyện">
+          <button type="button" id="modeFullBtn" class="mode-btn primary" aria-pressed="true">Làm cả đề</button>
+          <button type="button" id="modeSectionBtn" class="mode-btn" aria-pressed="false">Ôn theo phần</button>
+        </div>
+        <div id="sectionPicker" class="section-picker" hidden>
+          <div class="subtitle" style="margin:0 0 8px;">Chọn phần muốn ôn:</div>
+          <div id="sectionChips" class="quiz-picker" aria-label="Chọn phần ôn"></div>
+        </div>
+        <div id="homeQuizHint" class="subtitle" style="margin:0 0 10px;">
           Chọn bài để bắt đầu. Danh sách được chia 2 cột.
         </div>
         <div id="quizPicker" class="quiz-picker" aria-label="Chọn bài"></div>
       </div>
 
       <div id="screenQuiz" class="screen">
+        <div id="quizPartBar" class="subtitle" aria-live="polite"></div>
         <div class="controls">
           <div class="row">
             <label class="small" for="fullName">Họ và tên</label>
@@ -539,6 +644,7 @@
               Chưa có dữ liệu bài này. Hãy chạy <code>node ./scripts/build-quizzes.mjs</code> để tạo file
               <code>quizzes.generated.js</code>, rồi mở lại trang.
             </div>
+            <div id="sectionHint" class="hint">Không có câu nào cho phần này trong các đề đã tải (hoặc cấu trúc đề khác thường).</div>
           </div>
         </div>
 
@@ -1505,8 +1611,27 @@
     const screenQuiz = document.getElementById("screenQuiz");
     const scoreDialog = document.getElementById("scoreDialog");
     const scoreDialogBody = document.getElementById("scoreDialogBody");
+    const modeFullBtn = document.getElementById("modeFullBtn");
+    const modeSectionBtn = document.getElementById("modeSectionBtn");
+    const sectionPickerEl = document.getElementById("sectionPicker");
+    const sectionChipsEl = document.getElementById("sectionChips");
+    const homeQuizHintEl = document.getElementById("homeQuizHint");
+    const quizPartBarEl = document.getElementById("quizPartBar");
+    const sectionHintEl = document.getElementById("sectionHint");
 
     const generated = Array.isArray(window.GENERATED_QUIZZES) ? window.GENERATED_QUIZZES : [];
+
+    /** Phần lớn trong đề (khớp text trong <div class="title"><p>…</p></div>) */
+    const SECTION_TYPES = [
+      { id: "mozi", jp: "文字と語彙", vi: "Chữ cái và từ vựng" },
+      { id: "kaiwa", jp: "会話・表現", vi: "Hội thoại và cách diễn đạt" },
+      { id: "dokkai", jp: "読解", vi: "Đọc hiểu" },
+      { id: "joho", jp: "読解（情報検索）", vi: "Đọc hiểu (Tìm kiếm thông tin)" },
+      { id: "chokai", jp: "聴解", vi: "Nghe hiểu" },
+    ];
+
+    let practiceMode = "full";
+    let currentSectionId = null;
 
     const ALL_QUIZZES = [
       {
@@ -1531,7 +1656,209 @@
     ];
 
     let currentQuizId = null;
-    const HASH_PREFIX = "#quiz=";
+    const HASH_QUIZ_PREFIX = "#quiz=";
+    const HASH_SECTION_PREFIX = "#section=";
+
+    function normalizeSectionLabel(s) {
+      return String(s || "")
+        .replace(/\s+/g, "")
+        .replace(/[\uFF08\u0028]/g, "(")
+        .replace(/[\uFF09\u0029]/g, ")");
+    }
+
+    function getSectionTypeById(id) {
+      return SECTION_TYPES.find((x) => x.id === id) || null;
+    }
+
+    function titleParagraphText(titleEl) {
+      const p = titleEl.querySelector(":scope > p");
+      return p ? p.textContent : "";
+    }
+
+    function findSectionStartIndex(children, sectionJp) {
+      const want = normalizeSectionLabel(sectionJp);
+      for (let i = 0; i < children.length; i++) {
+        const el = children[i];
+        if (!el.classList || !el.classList.contains("title")) continue;
+        if (normalizeSectionLabel(titleParagraphText(el)) === want) return i;
+      }
+      return -1;
+    }
+
+    function findNextTitleIndex(children, startIdx) {
+      for (let i = startIdx + 1; i < children.length; i++) {
+        const el = children[i];
+        if (el.classList && el.classList.contains("title")) return i;
+      }
+      return children.length;
+    }
+
+    /** Cắt #questionContainer chỉ giữ một mục lớn (từ .title đến trước .title kế tiếp). */
+    function sliceQuestionContainerBySection(fullContainer, sectionJp) {
+      const children = Array.from(fullContainer.children);
+      const start = findSectionStartIndex(children, sectionJp);
+      if (start < 0) return null;
+      const end = findNextTitleIndex(children, start);
+      const out = document.createElement("div");
+      out.id = "questionContainer";
+      for (let i = start; i < end; i++) {
+        out.appendChild(children[i].cloneNode(true));
+      }
+      return out;
+    }
+
+    /** Đổi name radio trong một đoạn đã cắt để không trùng giữa các đề khi gộp. */
+    function uniquifyRadioGroupNames(fragmentRoot, quizId) {
+      const safe = String(quizId).replace(/[^a-zA-Z0-9_-]/g, "_");
+      for (const input of fragmentRoot.querySelectorAll('input[type="radio"][name]')) {
+        const n = input.getAttribute("name");
+        if (!n) continue;
+        input.setAttribute("name", `${safe}__${n}`);
+      }
+    }
+
+    /** Gộp cùng một mục lớn từ tất cả đề trong ALL_QUIZZES. */
+    function buildMergedSectionContainer(sectionJp) {
+      const out = document.createElement("div");
+      out.id = "questionContainer";
+      let any = false;
+      for (const slot of ALL_QUIZZES) {
+        let full = null;
+        try {
+          full = slot.getContainerNode();
+        } catch {
+          full = null;
+        }
+        if (!full) continue;
+        const sliced = sliceQuestionContainerBySection(full, sectionJp);
+        if (!sliced || !sliced.querySelector(".question")) continue;
+        uniquifyRadioGroupNames(sliced, slot.id);
+        const head = document.createElement("div");
+        head.className = "merged-deck-label";
+        head.innerHTML = `<p>${slot.title}</p>`;
+        out.appendChild(head);
+        while (sliced.firstChild) out.appendChild(sliced.firstChild);
+        any = true;
+      }
+      return any ? out : null;
+    }
+
+    function parseHashRoute() {
+      const raw = (window.location.hash || "").replace(/^#/, "");
+      if (!raw) return { type: "none" };
+      if (raw.startsWith("section=")) {
+        const partId = decodeURIComponent(raw.slice("section=".length));
+        return { type: "merged", partId };
+      }
+      if (raw.startsWith("quiz=")) {
+        const rest = raw.slice("quiz=".length);
+        const amp = rest.indexOf("&");
+        const quizPart = amp === -1 ? rest : rest.slice(0, amp);
+        const quizId = decodeURIComponent(quizPart);
+        let partId = null;
+        if (amp !== -1) {
+          const q = new URLSearchParams(rest.slice(amp + 1));
+          partId = q.get("part");
+        }
+        return { type: "quiz", quizId, partId };
+      }
+      return { type: "none" };
+    }
+
+    function setQuizHash(quizId) {
+      window.location.hash = `${HASH_QUIZ_PREFIX}${encodeURIComponent(quizId)}`;
+    }
+
+    function setSectionHash(partId) {
+      window.location.hash = `${HASH_SECTION_PREFIX}${encodeURIComponent(partId)}`;
+    }
+
+    function syncModeButtons() {
+      const isFull = practiceMode === "full";
+      if (modeFullBtn) {
+        modeFullBtn.setAttribute("aria-pressed", isFull ? "true" : "false");
+        modeFullBtn.classList.toggle("primary", isFull);
+      }
+      if (modeSectionBtn) {
+        modeSectionBtn.setAttribute("aria-pressed", isFull ? "false" : "true");
+        modeSectionBtn.classList.toggle("primary", !isFull);
+      }
+    }
+
+    function updateHomeHints() {
+      if (!homeQuizHintEl) return;
+      if (practiceMode === "full") {
+        homeQuizHintEl.textContent = "Chọn bài để bắt đầu:";
+      } else {
+        homeQuizHintEl.textContent =
+          "";
+      }
+    }
+
+    function renderSectionPicker() {
+      if (!sectionChipsEl) return;
+      sectionChipsEl.replaceChildren(
+        ...SECTION_TYPES.map((s) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "chip";
+          btn.dataset.sectionId = s.id;
+          btn.innerHTML = `${s.jp}<span class="chip-sub">${s.vi}</span>`;
+          btn.setAttribute("aria-current", s.id === currentSectionId ? "true" : "false");
+          btn.addEventListener("click", () => {
+            currentSectionId = s.id;
+            renderSectionPicker();
+            updateHomeHints();
+            openMergedSectionPractice();
+          });
+          return btn;
+        })
+      );
+    }
+
+    function setPracticeMode(mode) {
+      practiceMode = mode === "section" ? "section" : "full";
+      if (practiceMode === "full") {
+        currentSectionId = null;
+        if (sectionPickerEl) sectionPickerEl.hidden = true;
+      } else {
+        if (sectionPickerEl) sectionPickerEl.hidden = false;
+        currentSectionId = null;
+        renderSectionPicker();
+      }
+      syncModeButtons();
+      updateHomeHints();
+      renderPicker();
+    }
+
+    function updateQuizPartBar() {
+      if (!quizPartBarEl) return;
+      if (practiceMode === "section" && currentSectionId && screenQuiz.classList.contains("show")) {
+        const s = getSectionTypeById(currentSectionId);
+        quizPartBarEl.classList.add("show");
+        quizPartBarEl.innerHTML = s
+          ? `<strong> ${s.jp} <span style="color:var(--muted);">(${s.vi})</span></strong>`
+          : "";
+      } else {
+        quizPartBarEl.classList.remove("show");
+        quizPartBarEl.textContent = "";
+      }
+    }
+
+    /** Mở màn làm bài: toàn bộ đề cùng một mục lớn (currentSectionId đã set). */
+    function openMergedSectionPractice() {
+      if (!currentSectionId) return;
+      practiceMode = "section";
+      currentQuizId = null;
+      syncModeButtons();
+      screenHome.classList.remove("show");
+      screenQuiz.classList.add("show");
+      updateQuizPartBar();
+      renderPicker();
+      renderMergedQuiz();
+      resetAll({ keepName: true, keepScroll: false });
+      setSectionHash(currentSectionId);
+    }
 
     function normalizeAndExtractAnswers(root) {
       const questions = Array.from(root.querySelectorAll(".question"));
@@ -1576,6 +1903,10 @@
       screenQuiz.classList.remove("show");
       currentQuizId = null;
       dataHintEl.classList.remove("show");
+      sectionHintEl.classList.remove("show");
+      updateQuizPartBar();
+      syncModeButtons();
+      updateHomeHints();
       renderPicker();
       mountEl.replaceChildren();
       resultEl.classList.remove("show");
@@ -1586,21 +1917,32 @@
 
     function showQuiz(quizId) {
       currentQuizId = quizId;
+      practiceMode = "full";
+      currentSectionId = null;
+      if (sectionPickerEl) sectionPickerEl.hidden = true;
+      syncModeButtons();
+      updateHomeHints();
       screenHome.classList.remove("show");
       screenQuiz.classList.add("show");
+      updateQuizPartBar();
       renderPicker();
       renderQuiz();
       resetAll({ keepName: true, keepScroll: false });
-      window.location.hash = `${HASH_PREFIX}${encodeURIComponent(quizId)}`;
+      setQuizHash(quizId);
     }
 
     function renderPicker() {
+      if (practiceMode === "section") {
+        pickerEl.hidden = true;
+        pickerEl.replaceChildren();
+        return;
+      }
+      pickerEl.hidden = false;
       pickerEl.replaceChildren(
         ...ALL_QUIZZES.map((slot) => {
           const btn = document.createElement("button");
           btn.type = "button";
           btn.className = "chip";
-          // Show compact label like 01, 02... if matches
           const m = /jft-basic-(\d{2})$/.exec(slot.id);
           const code = m ? m[1] : slot.title;
           btn.innerHTML = `${code}<span class="chip-sub">${slot.title}</span>`;
@@ -1619,8 +1961,32 @@
       );
     }
 
+    function renderMergedQuiz() {
+      sectionHintEl.classList.remove("show");
+      dataHintEl.classList.remove("show");
+      const st = getSectionTypeById(currentSectionId);
+      if (!st) {
+        mountEl.replaceChildren();
+        submitBtn.disabled = true;
+        backBtn.disabled = false;
+        return;
+      }
+      const merged = buildMergedSectionContainer(st.jp);
+      if (!merged || !merged.querySelector(".question")) {
+        mountEl.replaceChildren();
+        sectionHintEl.classList.add("show");
+        submitBtn.disabled = true;
+        backBtn.disabled = false;
+        return;
+      }
+      submitBtn.disabled = false;
+      backBtn.disabled = false;
+      normalizeAndExtractAnswers(merged);
+      mountEl.replaceChildren(merged);
+    }
+
     function renderQuiz() {
-      // No quiz chosen: show list-only state
+      sectionHintEl.classList.remove("show");
       if (!currentQuizId) {
         mountEl.replaceChildren();
         submitBtn.disabled = true;
@@ -1628,10 +1994,11 @@
         return;
       }
 
-      const container = getQuizContainerNode(currentQuizId);
-      if (!container) {
+      const fullContainer = getQuizContainerNode(currentQuizId);
+      if (!fullContainer) {
         mountEl.replaceChildren();
         dataHintEl.classList.add("show");
+        sectionHintEl.classList.remove("show");
         submitBtn.disabled = true;
         backBtn.disabled = false;
         return;
@@ -1639,8 +2006,8 @@
       dataHintEl.classList.remove("show");
       submitBtn.disabled = false;
       backBtn.disabled = false;
-      normalizeAndExtractAnswers(container);
-      mountEl.replaceChildren(container);
+      normalizeAndExtractAnswers(fullContainer);
+      mountEl.replaceChildren(fullContainer);
     }
 
     function getAllQuestionBlocks() {
@@ -1755,11 +2122,15 @@
       nameHintEl.classList.remove("show");
       allAnsweredHintEl.classList.remove("show");
       dataHintEl.classList.remove("show");
+      sectionHintEl.classList.remove("show");
       unlockInputsAndClear();
       if (!keepName) fullNameEl.value = "";
       fullNameEl.focus();
       if (!keepScroll) window.scrollTo({ top: 0, behavior: "smooth" });
     }
+
+    modeFullBtn?.addEventListener("click", () => setPracticeMode("full"));
+    modeSectionBtn?.addEventListener("click", () => setPracticeMode("section"));
 
     submitBtn.addEventListener("click", grade);
     backBtn.addEventListener("click", () => {
@@ -1768,14 +2139,35 @@
     fullNameEl.addEventListener("input", () => nameHintEl.classList.remove("show"));
     fullNameEl.addEventListener("input", () => allAnsweredHintEl.classList.remove("show"));
     fullNameEl.addEventListener("input", () => dataHintEl.classList.remove("show"));
+    fullNameEl.addEventListener("input", () => sectionHintEl.classList.remove("show"));
 
-    renderPicker();
-    // Router: open quiz if hash present
-    const hash = window.location.hash || "";
-    if (hash.startsWith(HASH_PREFIX)) {
-      const id = decodeURIComponent(hash.slice(HASH_PREFIX.length));
-      if (ALL_QUIZZES.some((q) => q.id === id)) showQuiz(id);
-      else showHome();
+    syncModeButtons();
+    updateHomeHints();
+
+    const route = parseHashRoute();
+    if (route.type === "merged" && SECTION_TYPES.some((s) => s.id === route.partId)) {
+      practiceMode = "section";
+      currentSectionId = route.partId;
+      if (sectionPickerEl) sectionPickerEl.hidden = false;
+      renderSectionPicker();
+      syncModeButtons();
+      updateHomeHints();
+      openMergedSectionPractice();
+    } else if (route.type === "quiz" && route.partId && SECTION_TYPES.some((s) => s.id === route.partId)) {
+      practiceMode = "section";
+      currentSectionId = route.partId;
+      if (sectionPickerEl) sectionPickerEl.hidden = false;
+      renderSectionPicker();
+      syncModeButtons();
+      updateHomeHints();
+      openMergedSectionPractice();
+    } else if (route.type === "quiz" && route.quizId && ALL_QUIZZES.some((q) => q.id === route.quizId)) {
+      practiceMode = "full";
+      currentSectionId = null;
+      if (sectionPickerEl) sectionPickerEl.hidden = true;
+      syncModeButtons();
+      updateHomeHints();
+      showQuiz(route.quizId);
     } else {
       showHome();
     }
