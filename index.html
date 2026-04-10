@@ -716,6 +716,7 @@
 
       <div id="screenQuiz" class="screen">
         <div id="quizPartBar" class="subtitle" aria-live="polite"></div>
+        <div id="sectionBatchBar" class="subtitle" style="display:none; margin-top:6px;"></div>
         <div class="controls">
           <div class="row">
             <label class="small" for="fullName">Họ và tên</label>
@@ -788,6 +789,7 @@
     const sectionChipsEl = document.getElementById("sectionChips");
     const homeQuizHintEl = document.getElementById("homeQuizHint");
     const quizPartBarEl = document.getElementById("quizPartBar");
+    const sectionBatchBarEl = document.getElementById("sectionBatchBar");
     const sectionHintEl = document.getElementById("sectionHint");
     const accessGateEl = document.getElementById("accessGate");
     const mainAppEl = document.getElementById("mainApp");
@@ -810,6 +812,8 @@
 
     let practiceMode = "full";
     let currentSectionId = null;
+    let sectionBatchIndex = 0;
+    const SECTION_BATCH_SIZE = 5;
 
     const ALL_QUIZZES = [
       
@@ -887,11 +891,8 @@
       }
     }
 
-    /** Gộp cùng một mục lớn từ tất cả đề trong ALL_QUIZZES. */
-    function buildMergedSectionContainer(sectionJp) {
-      const out = document.createElement("div");
-      out.id = "questionContainer";
-      let any = false;
+    function getSectionSlices(sectionJp) {
+      const slices = [];
       for (const slot of ALL_QUIZZES) {
         let full = null;
         try {
@@ -902,6 +903,22 @@
         if (!full) continue;
         const sliced = sliceQuestionContainerBySection(full, sectionJp);
         if (!sliced || !sliced.querySelector(".question")) continue;
+        slices.push({ slot, sliced });
+      }
+      return slices;
+    }
+
+    /** Gộp cùng một mục lớn theo batch (mỗi lần 5 đề). */
+    function buildMergedSectionContainer(sectionJp, batchIndex = 0, batchSize = SECTION_BATCH_SIZE) {
+      const slices = getSectionSlices(sectionJp);
+      const totalDecks = slices.length;
+      const start = Math.max(0, batchIndex * batchSize);
+      const end = Math.min(totalDecks, start + batchSize);
+      const out = document.createElement("div");
+      out.id = "questionContainer";
+      let any = false;
+      for (let i = start; i < end; i++) {
+        const { slot, sliced } = slices[i];
         uniquifyRadioGroupNames(sliced, slot.id);
         const head = document.createElement("div");
         head.className = "merged-deck-label";
@@ -910,7 +927,11 @@
         while (sliced.firstChild) out.appendChild(sliced.firstChild);
         any = true;
       }
-      return any ? out : null;
+      return {
+        container: any ? out : null,
+        totalDecks,
+        totalPages: Math.max(1, Math.ceil(totalDecks / batchSize)),
+      };
     }
 
     function parseHashRoute() {
@@ -994,6 +1015,7 @@
       } else {
         if (sectionPickerEl) sectionPickerEl.hidden = false;
         currentSectionId = null;
+        sectionBatchIndex = 0;
         renderSectionPicker();
       }
       syncModeButtons();
@@ -1020,6 +1042,7 @@
       if (!currentSectionId) return;
       practiceMode = "section";
       currentQuizId = null;
+      sectionBatchIndex = 0;
       syncModeButtons();
       screenHome.classList.remove("show");
       screenQuiz.classList.add("show");
@@ -1136,12 +1159,60 @@
       dataHintEl.classList.remove("show");
       const st = getSectionTypeById(currentSectionId);
       if (!st) {
+        if (sectionBatchBarEl) sectionBatchBarEl.style.display = "none";
         mountEl.replaceChildren();
         submitBtn.disabled = true;
         backBtn.disabled = false;
         return;
       }
-      const merged = buildMergedSectionContainer(st.jp);
+      const mergedResult = buildMergedSectionContainer(st.jp, sectionBatchIndex, SECTION_BATCH_SIZE);
+      const merged = mergedResult.container;
+      const totalPages = mergedResult.totalPages;
+      if (sectionBatchIndex > totalPages - 1) {
+        sectionBatchIndex = Math.max(0, totalPages - 1);
+        return renderMergedQuiz();
+      }
+
+      if (sectionBatchBarEl) {
+        if (mergedResult.totalDecks <= SECTION_BATCH_SIZE) {
+          sectionBatchBarEl.style.display = "none";
+          sectionBatchBarEl.replaceChildren();
+        } else {
+          sectionBatchBarEl.style.display = "block";
+          sectionBatchBarEl.replaceChildren();
+
+          const prevBtn = document.createElement("button");
+          prevBtn.type = "button";
+          prevBtn.textContent = "Truoc 5 de";
+          prevBtn.disabled = sectionBatchIndex <= 0;
+          prevBtn.addEventListener("click", () => {
+            if (sectionBatchIndex <= 0) return;
+            sectionBatchIndex -= 1;
+            renderMergedQuiz();
+            resetAll({ keepName: true, keepScroll: false });
+          });
+
+          const pageText = document.createElement("span");
+          pageText.style.margin = "0 10px";
+          pageText.textContent = `Nhom ${sectionBatchIndex + 1}/${totalPages}`;
+
+          const nextBtn = document.createElement("button");
+          nextBtn.type = "button";
+          nextBtn.textContent = "Sau 5 de";
+          nextBtn.disabled = sectionBatchIndex >= totalPages - 1;
+          nextBtn.addEventListener("click", () => {
+            if (sectionBatchIndex >= totalPages - 1) return;
+            sectionBatchIndex += 1;
+            renderMergedQuiz();
+            resetAll({ keepName: true, keepScroll: false });
+          });
+
+          sectionBatchBarEl.appendChild(prevBtn);
+          sectionBatchBarEl.appendChild(pageText);
+          sectionBatchBarEl.appendChild(nextBtn);
+        }
+      }
+
       if (!merged || !merged.querySelector(".question")) {
         mountEl.replaceChildren();
         sectionHintEl.classList.add("show");
@@ -1152,11 +1223,14 @@
       submitBtn.disabled = false;
       backBtn.disabled = false;
       normalizeAndExtractAnswers(merged);
+      fixAudios(merged);
       mountEl.replaceChildren(merged);
+      setupLazyAudio();
     }
 
     function renderQuiz() {
       sectionHintEl.classList.remove("show");
+      if (sectionBatchBarEl) sectionBatchBarEl.style.display = "none";
       if (!currentQuizId) {
         mountEl.replaceChildren();
         submitBtn.disabled = true;
@@ -1350,28 +1424,42 @@
       gateMsgEl.classList.remove("error", "ok");
     }
     function fixAudios(root) {
-  root.querySelectorAll("audio").forEach(audio => {
-    const source = audio.querySelector("source");
-    if (source && source.getAttribute("src")) {
-      audio.setAttribute("data-src", source.getAttribute("src")); // 👈 FIX
-      source.remove();
+      root.querySelectorAll("audio").forEach((audio) => {
+        const source = audio.querySelector("source");
+        const sourceSrc = source && source.getAttribute("src");
+        const currentSrc = audio.getAttribute("src");
+        const chosenSrc = sourceSrc || currentSrc || "";
+
+        if (chosenSrc) audio.setAttribute("data-src", chosenSrc);
+        if (source) source.remove();
+        audio.removeAttribute("src");
+
+        audio.setAttribute("preload", "none");
+        audio.setAttribute("playsinline", "");
+        audio.removeAttribute("controlslist");
+      });
     }
-    audio.removeAttribute("src");
-    audio.setAttribute("preload", "none");
-    audio.setAttribute("playsinline", "");
-    audio.removeAttribute("controlslist");
-  });
-}
+
     function setupLazyAudio() {
-  document.querySelectorAll("audio[data-src]").forEach(audio => {
-    audio.addEventListener("play", () => {
-      if (!audio.src) {
-        audio.src = audio.dataset.src;
-        audio.load(); // 👈 QUAN TRỌNG cho iOS
-      }
-    }, { once: true });
-  });
-}
+      document.querySelectorAll("audio[data-src]").forEach((audio) => {
+        if (audio.dataset.lazyBound === "1") return;
+        audio.dataset.lazyBound = "1";
+
+        const attachSrc = () => {
+          const dataSrc = audio.dataset.src;
+          if (!dataSrc || audio.src) return;
+          audio.src = dataSrc;
+          audio.load();
+        };
+
+        // Some browsers need src before native controls can start playback.
+        audio.addEventListener("pointerdown", attachSrc, { once: true });
+        audio.addEventListener("touchstart", attachSrc, { once: true });
+        audio.addEventListener("mousedown", attachSrc, { once: true });
+        audio.addEventListener("focus", attachSrc, { once: true });
+        audio.addEventListener("play", attachSrc, { once: true });
+      });
+    }
     function readGateEmail() {
       return (gateEmailEl && gateEmailEl.value ? gateEmailEl.value : "").trim().toLowerCase();
     }
