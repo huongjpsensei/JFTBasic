@@ -7728,7 +7728,6 @@ table, tr, td {
 </div>  
                 <label class="selected-answer" style="color: green;"><input type="radio" name="question41" value="A" disabled="">２　サービスが悪いから</label>
                 <label><input type="radio" name="question41" value="B" disabled="">３　お弁当を作れるから</label>
-                <label><input type="radio" name="question41" value="C" disabled=""></label>
                 <label><input type="radio" name="question41" value="D" disabled="">４　学校から遠いから</label></div>
                 <div class="question">
                 <p>問２二人は何時からえいがをみますか。</p>
