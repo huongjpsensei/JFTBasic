@@ -1262,6 +1262,11 @@
       );
     }
 
+    function isAdmin() {
+      const email = (localStorage.getItem(GATE_LS_KEY) || "").toLowerCase();
+      return email === "admin@gmail.com";
+    }
+
     function getUserChoice(questionEl) {
       const checked = questionEl.querySelector('input[type="radio"]:checked');
       return checked ? checked.value : null;
@@ -1284,7 +1289,7 @@
 
     function grade() {
       const name = (fullNameEl.value || "").trim();
-      if (!name) {
+      if (!name && !isAdmin()) {
         nameHintEl.classList.add("show");
         allAnsweredHintEl.classList.remove("show");
         fullNameEl.focus();
@@ -1306,7 +1311,7 @@
       }
 
       // Require: all questions must be answered
-      if (missing.length > 0) {
+      if (missing.length > 0 && !isAdmin()) {
         allAnsweredHintEl.classList.add("show");
         // Mark missing + scroll to first missing question
         for (const q of missing) q.classList.add("q-missing");
