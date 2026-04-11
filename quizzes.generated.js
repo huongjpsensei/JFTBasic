@@ -7726,9 +7726,9 @@ table, tr, td {
                 
                 <div class="audio-player"><audio controls="" controlslist="nodownload"><source src="https://luyenthitokutei.com/wp-content/uploads/2024/01/JFT11_2.1.mp3" type="audio/mpeg"></audio>
 </div>  
-                <label class="selected-answer" style="color: green;"><input type="radio" name="question41" value="A" disabled="">２　サービスが悪いから</label>
-                <label><input type="radio" name="question41" value="B" disabled="">３　お弁当を作れるから</label>
-                <label><input type="radio" name="question41" value="D" disabled="">４　学校から遠いから</label></div>
+                <label class="selected-answer" style="color: green;"><input type="radio" name="question41" value="A" disabled="">1　サービスが悪いから</label>
+                <label><input type="radio" name="question41" value="B" disabled="">2　お弁当を作れるから</label>
+                <label><input type="radio" name="question41" value="D" disabled="">3　学校から遠いから</label></div>
                 <div class="question">
                 <p>問２二人は何時からえいがをみますか。</p>
                 
