@@ -1305,14 +1305,14 @@
         else missing.push(q);
       }
 
-      // Require: all questions must be answered
-      if (missing.length > 0) {
-        allAnsweredHintEl.classList.add("show");
-        // Mark missing + scroll to first missing question
-        for (const q of missing) q.classList.add("q-missing");
-        missing[0].scrollIntoView({ behavior: "smooth", block: "center" });
-        return;
-      }
+      // // Require: all questions must be answered
+      // if (missing.length > 0) {
+      //   allAnsweredHintEl.classList.add("show");
+      //   // Mark missing + scroll to first missing question
+      //   for (const q of missing) q.classList.add("q-missing");
+      //   missing[0].scrollIntoView({ behavior: "smooth", block: "center" });
+      //   return;
+      // }
 
       for (let i = 0; i < questions.length; i++) {
         const q = questions[i];
