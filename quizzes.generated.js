@@ -97,8 +97,8 @@ window.GENERATED_QUIZZES = [
                 
                   
                 <label class="" style="color: red;"><input type="radio" name="question9" value="A" disabled="">あつまりました</label>
-                <label><input type="radio" name="question9" value="B" disabled="">きまりました</label>
-                <label style="color: green;"><input type="radio" name="question9" value="C" disabled="">とまりました</label>
+                <label style="color: green;><input type="radio" name="question9" value="B" disabled="">きまりました</label>
+                <label"><input type="radio" name="question9" value="C" disabled="">とまりました</label>
                 </div></div><div class="group">
                       <div class="title-group">
                         <p><b>題４　　文をよんで、いちばんいいものを一つえらんでください。</b><br> <span class="sub-title"></span></p>
@@ -1623,7 +1623,7 @@ Chúc bạn may mắn và thành công!
                 <img decoding="async" class="question-img" src="./assets/jft-basic-03/images/2ec3c1a936e0.png" alt="Image for question 3">
                   
                 <label><input type="radio" name="question2" value="A" disabled="">ききます</label>
-                <label class="" style="color: red;"><input type="radio" name="question2" value="B" disabled="">おどります</label>
+                <label><input type="radio" name="question2" value="B" disabled="">おどります</label>
                 <label style="color: green;"><input type="radio" name="question2" value="C" disabled="">おくります</label>
                 </div>
                 <div class="question">
