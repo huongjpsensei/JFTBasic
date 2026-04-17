@@ -842,8 +842,8 @@ B の買い物は、何ポイント（なんてん）もらえますか。
                 
                   
                 <label class="" style="color: red;"><input type="radio" name="question9" value="A" disabled="">あつまりました</label>
-                <label><input type="radio" name="question9" value="B" disabled="">きまりました</label>
-                <label style="color: green;"><input type="radio" name="question9" value="C" disabled="">とまりました</label>
+                <label style="color: green;"><input type="radio" name="question9" value="B" disabled="">きまりました</label>
+                <label><input type="radio" name="question9" value="C" disabled="">とまりました</label>
                 </div></div><div class="group">
                       <div class="title-group">
                         <p><b>題４　　文をよんで、いちばんいいものを一つえらんでください。</b><br> <span class="sub-title"></span></p>
